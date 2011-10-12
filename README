@@ -1,0 +1,5 @@
+Lain is an sBNC bot, that handles things like channel statistics, channel logging, and custom channel messages on EsperNet.
+
+Like most sBNC bots, it is coded in TCL, and runs as a sBNC user, on a instance of shroud BNC.
+
+The scripts you find here, are coded to run on the sBNC user account 'lains' although this is easily changed.
