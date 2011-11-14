@@ -1,3 +1,12 @@
+setctx sparhawk
+bind pub - .custcmd custcmd
+bind pub - .listcmd listcmd
+bind pub - .setcmd setcmd
+bind pub - .addalias aliascmd
+bind pub - .appcmd appcmd
+bind pub - .getcmd getcmd
+bind pubm - "*" show_fct
+
 setctx lains
 bind pub - |custcmd custcmd
 bind pub - |listcmd listcmd
@@ -55,7 +64,8 @@ proc setcmd { nick userhost handle chan arg } {
 
 	set txt [split $arg]
 	set cmd [string tolower [lindex $txt 0]]
-	set cmdf "${cmd}.cmd"
+  set cmd [string trimleft $cmd "./"]
+  set cmdf "${cmd}.cmd"
 	set msg [join [lrange $txt 1 end]]
 
 	if {$msg != ""} {
@@ -127,8 +137,10 @@ proc aliascmd { nick userhost handle chan arg } {
 
 	set txt [split $arg]
 	set alias [string tolower [lindex $txt 0]]
+  set alias [string trimleft $alias "./"]
 	set aliasf "${alias}.alias"
 	set cmd [string tolower [lindex $txt 1]]
+  set cmd [string trimleft $cmd "./"]
 	set cmdf "${cmd}.cmd"
 	set cmdp "${cmd}.proc"
 
@@ -171,60 +183,94 @@ proc bncnotc {text} { putclient ":-sBNC!core@shroudbnc.info PRIVMSG $::botnick :
 proc show_fct { nick userhost handle chan text } {
 	set text [concat $text]
 	set command [lindex [split [string tolower $text] { }] 0]
-	if {([string index $command 0] == "|") || ([string index $command 0] == ".") || (([string index $command 0] == "+") && ([onchan "helpbot" "#essentials"] == 0))} {
+  set text [lrange [split $text { }] 1 end]
+  set method putchan
+  set target $chan
+  set prefix ""
+	
+  if {([string index $command 0] == "|") || ([khfloodc $nick] >= 1)} {
+      set method putnotc
+      set target $nick
+  } elseif {([string index $command 0] != ".") && ([string index $command 0] != "+")} { 
+      return
+  }
+  
+  set tail [lindex $text end]
+  #If the last param begins with a @ then the message should be directed at that 'string'
+  if {[string index $tail 0] == "@"} {
+    set text [lrange $text 0 end-1]
+    set tail [string range $tail 1 end]
 
-		set text [join [lrange [split $text { }] 1 end]]
-		showcmd $nick $userhost $handle $chan $chan $command $text
-	}
+    #If the last param began with @@ then the reply should be messaged to a player
+    if {[string index $tail 0] == "@"} {
+      set tail [string range $tail 1 end]
+      if {([onchan $tail $chan]) && ([khfloodc $nick] < 1)} {
+        set method putnotc
+        set target $tail
+      }
+    }    
+    set prefix "${tail}: "
+  }
+  
+  set count 0
+  set return [showcmd $nick $userhost $handle $chan $chan $command [join $text { }]]  
+  foreach line [split $return "\n"] {
+    incr count
+    if {[string length $line] > 1} {
+      $method $target "${prefix}${line}"
+    }
+    if {$count >= 3} { return }
+  }
 }
 
 proc getcmd { nick userhost handle chan text } {
 	set text [concat $text]
-	set command [lindex [split [string tolower $text] { }] 0]
+	set command ".[lindex [split [string tolower $text] { }] 0]"
 	set target $chan
 	set chan [lindex [split [string tolower $text] { }] 1]
-    showcmd $nick $userhost $handle $chan $target $command $text	
+  set return [showcmd $nick $userhost $handle $chan $target $command $text]
+  if {([string index $command 0] == "|") || ([khfloodc $nick] >= 1)} {
+		set method putnotc
+		set target $nick
+	} 
+  else {
+		set method putchan
+	}
+  foreach line [split $return "\n"] {
+    if {[string length $line] > 1} {
+      $method $target $line
+    }
+	}
 }
 
 proc showcmd { nick userhost handle chan target command text } {
 	global dirname
 	set cmd [lindex [string tolower $command] 0]
-	if {([string index $command 0] == "|") || ([khfloodc $nick] >= 1)} {
-		set method putnotc
-		set target $nick
-	} else {
-		set method putchan
-	}
-	set txt [string trimleft $cmd .+|]
+
+	set txt [string range $cmd 1 end]
+  set testtxt [string trimleft $txt "./"]
+  if {$txt != $testtxt} { return }
 	if {$txt != ""} {
 		if {([file exists $dirname/$chan/$txt.proc] == 1) && ($txt != "")} {
 			if {[khflood $nick] >= 2} {	return }
 			set dbout [readdb $dirname/$chan/$txt.proc]
-			set return [$dbout $nick $chan $text]
-			foreach line [split $return "\n"] {
-				$method $target $line
-			}
+			return [$dbout $nick $chan $text]
 		}
 		if {([file exists $dirname/$chan/$txt.cmd] == 1) && ($txt != "")} {
 			if {[khflood $nick] >= 2} {	return }
-			set dbout [readdb $dirname/$chan/$txt.cmd]
-			$method $target "'${cmd}': $dbout"
+			set dbout [string map {{\n} "\n"} [readdb $dirname/$chan/$txt.cmd]]
+      set output ""      
+      foreach line [split $dbout "\n"] {
+        if {[string length $line] > 1} {
+          append output "${command}: ${line}\n"
+        }
+      }
+			return $output
 		}
 		if {([file exists $dirname/$chan/$txt.alias] == 1) && ($txt != "")} {
 			set dbin [readdb $dirname/$chan/$txt.alias]
 			if {([file exists $dirname/$chan/$dbin] == 1) && ($dbin != "")} {
-				if {[khflood $nick] >= 2} {	return }
-				set dbout [readdb $dirname/$chan/$dbin]
-				if {[string match "*.proc" $dbin] == 1} {
-					set return [$dbout $nick $chan $text]
-					foreach line [split $return "\n"] {
-            if {[string length $line] > 1} {
-              $method $target $line
-            }
-					}
-				} else {
-					$method $target "'${cmd}': $dbout"
-				}
+        return [showcmd $nick $userhost $handle $chan $target $dbin $text]
 			} else {
 				file delete $dirname/$chan/$txt.alias
 			}
@@ -298,15 +344,14 @@ proc custcmd { nick userhost handle chan arg } {
 proc listcmd { nick userhost handle chan arg } {
 	global dirname
 
-	set files "[glob -tails -directory $dirname/$chan -nocomplain -type f *.cmd] [glob -tails -directory $dirname/$chan -nocomplain -type f *.proc]"
+	set cmd [glob -tails -directory $dirname/$chan -nocomplain -type f *.cmd]
+  set proc [glob -tails -directory $dirname/$chan -nocomplain -type f *.proc]
 
-	if {$files != ""} {
-		set names [join $files ", "]
-	} {
-		set names "none"
-	}
-	set names [string map {{.alias} {} {.cmd} {} {.proc} {}} $names]
-	putnotc $nick "CustCmds for ${chan}: $names PublicCmds: url ping log tail stats"
+	set cmd [string map {{.alias} {} {.cmd} {} {.proc} {}} $cmd]
+	set proc [string map {{.alias} {} {.cmd} {} {.proc} {}} $proc]
+  
+	putnotc $nick "\00304CustCmds for ${chan}:\003 $cmd"
+  putnotc $nick "\00304CustProc for ${chan}:\003 $proc \00304PublicCmds:\003 url ping log tail stats"
 
 }
 
@@ -344,5 +389,3 @@ proc onjoinmsg {nick host hand chan} {
 		putnotc $nick $reply
 	}
 }
-
-putmainlog "TCL define.tcl Loaded!"

@@ -26,8 +26,10 @@ proc essver {nick chan text} {
 proc essbuild {build} {
     set number Sockfail
 	set result [catch {
-		set number [http::data [http::geturl "http://ci.earth2me.net/guestAuth/app/rest/buildTypes/id:${build}/builds/status:SUCCESS/number"  -timeout 3000]]
-		set rawdate [split [http::data [http::geturl "http://ci.earth2me.net/guestAuth/app/rest/buildTypes/id:${build}/builds/status:SUCCESS/finishDate" -timeout 3000]] {+-}]
+    set raw [http::data [http::geturl "http://ess.khhq.net/build/build.php?build=${build}&date=1&timeout=1"  -timeout 2600]]
+		set number [lindex [split $raw "\n"] 0]
+    set rawdate [lindex [split $raw "\n"] 1]
+		set rawdate [split $rawdate {+-}]
 		if {[llength [split $rawdate { }]] > 3} { return 1 }
     set rawdate [clock scan [lindex $rawdate 0] -gmt 1]
 		set date [expr {$rawdate + (4*60*60)}]
@@ -62,8 +64,64 @@ proc build {nick chan text} {
 	return "${preress}\n${ress}\n$bukkit"
 }
 
+proc bukkitplugins {name {dev 0} {debug 0}} {
+  set url [::http::formatQuery pno 0 j {} title ${name} tag all inc_submissions false pageno 1 author {}]
+  if {$dev == 1} {
+  set data [::http::data [http::geturl http://plugins.bukkit.org/curseforge/data.php?$url -headers {X-I-Am-A-Bot Lain User-Agent Lain} -timeout 5000]]
+  } else {
+  set data [::http::data [http::geturl http://plugins.bukkit.org/data.php?$url -headers {X-I-Am-A-Bot Lain User-Agent Lain} -timeout 5000]]
+  }
+  if {$data == ""} { return "" }
+    if {$debug == 1} {
+        set log "[open "bukkitlookup.txt" w]"
+        puts $log "$data"
+        close $log
+    }
+	set dict [::json::json2dict $data]    
+	return [dict get $dict realdata]
+}
+proc bplugin {name} {
+	set data [bukkitplugins $name]
+	set prefix {{Bukkit Lookup}}
+  set result $prefix
+	foreach match $data {
+		set title [dict get $match title]
+		set author [dict get $match author]
+		set id [dict get $match threadid]
+		set reply "$title by $author \00312http://forums.bukkit.org/threads/${id}/\003"
+    if {[string match -nocase "*$name*" [lrange [split $title { }] 0 1]]} {
+      set result $prefix      
+      lappend result $reply
+      break
+    }
+    lappend result $reply
+	}
+	if {[llength $result] < 2} {lappend result "No matches found for '$name'"}
+	return [join [lrange $result 0 1] " \00304::\003 "]
+}
+
+proc bplugins {name {results 1}} {
+	set data [bukkitplugins $name]
+	set prefix {{Bukkit Lookup}}
+  set result $prefix
+	foreach match $data {
+		set title [dict get $match title]
+		set author [dict get $match author]
+		set id [dict get $match threadid]
+		set reply "$title"
+		lappend result $reply
+		if {[llength $result] > $results} { break }
+	}
+	if {[llength $result] < 2} {lappend result "No matches found for '$name'"}
+	return [join $result " \00304::\003 "]
+}
+
 proc pubbplugin {n c t} {
   return [bplugin $t]
+}
+
+proc pubbplugins {n c t} {
+  return [bplugins $t 4]
 }
 
 proc yamlpost {n c t} {
@@ -211,6 +269,7 @@ proc picktitledelim {itemlist c delim} {
   lappend result [lindex [split [string map [list $delim \u0080] $item] \u0080] $c]
  }
  return $result
-}                     
+}
 
-putmainlog "TCL ess.tcl Loaded!"
+
+

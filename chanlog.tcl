@@ -216,7 +216,5 @@ global broadcast
 catch {unset broadcast}
 lappend broadcast {{60} {Lain} {PingPong}}
 
-utimer 2 chanlog:time
+utimer 5 chanlog:time
 pingcheck 1
-
-putmainlog "TCL chanlog.tcl Loaded!"
