@@ -1,12 +1,3 @@
-setctx sparhawk
-bind pub - .custcmd custcmd
-bind pub - .listcmd listcmd
-bind pub - .setcmd setcmd
-bind pub - .addalias aliascmd
-bind pub - .appcmd appcmd
-bind pub - .getcmd getcmd
-bind pubm - "*" show_fct
-
 setctx lains
 bind pub - |custcmd custcmd
 bind pub - |listcmd listcmd
@@ -246,7 +237,6 @@ proc getcmd { nick userhost handle chan text } {
 proc showcmd { nick userhost handle chan target command text } {
 	global dirname
 	set cmd [lindex [string tolower $command] 0]
-
 	set txt [string range $cmd 1 end]
   set testtxt [string trimleft $txt "./"]
   if {$txt != $testtxt} { return }
@@ -270,7 +260,8 @@ proc showcmd { nick userhost handle chan target command text } {
 		if {([file exists $dirname/$chan/$txt.alias] == 1) && ($txt != "")} {
 			set dbin [readdb $dirname/$chan/$txt.alias]
 			if {([file exists $dirname/$chan/$dbin] == 1) && ($dbin != "")} {
-        return [showcmd $nick $userhost $handle $chan $target $dbin $text]
+        set dbin [lindex [split $dbin {.}] 0]
+        return [showcmd $nick $userhost $handle $chan $target ".$dbin" $text]
 			} else {
 				file delete $dirname/$chan/$txt.alias
 			}
