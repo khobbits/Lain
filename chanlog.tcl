@@ -153,25 +153,7 @@ proc chanlog:time-save {minute hour day month year} {
     putquick "TOPIC $chan"
         
   }
-  chanlog:stats
   chanlog:time
-}
-
-
-proc chanlog:stats {} {
-  setctx lains
-  global statdir
-  set stats "[open "${statdir}channel.cfg" w]" 
-  foreach chan [channels] {
-    set channel [chanlog:cformat $chan]
-    puts $stats "<channel=\"#${channel}\">
-   LogDir=\"logs/old/\"
-   LogPrefix = \"${channel}_\"
-   Logfile=\"logs/${channel}.htm\"
-   OutputFile=\"stats/${channel}.htm\"
-</channel>"    
-  }
-  close $stats
 }
 
 proc chanlog:urlencode {text} {
