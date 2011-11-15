@@ -19,7 +19,7 @@ proc lainai {nick host hand chan text} {
   if {[info exists lainailist($nick)]} {
     if {[isvoice $nick $chan] || [isop $nick $chan] } {    
       unset lainailist($nick)
-    } elseif {[regexp -nocase {(hello|help|question|anybody|hi)} $text]} {
+    } elseif {[regexp -nocase {\y(hello|help|question|anybody|hi)\y} $text]} {
       unset lainailist($nick)
       putchan $chan "\00304\[\00312Automsg\00304\]\003 If you have a question ${nick}, please just ask it and wait for a reply."
     } elseif {$lainailist($nick) > 1} { incr lainailist($nick) -1 } else { unset lainailist($nick) }    
