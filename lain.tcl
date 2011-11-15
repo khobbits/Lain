@@ -8,7 +8,7 @@ proc ping {host} {
 }
 
 
-proc pubbplugin {n c t} {
+proc pubping {n c t} {
   return [ping $t]
 }
 
