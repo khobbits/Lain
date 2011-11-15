@@ -7,15 +7,12 @@ proc ping {host} {
 	}
 }
 
-proc pubping {n u h c t} {
-	if {[khflood $n] >= 1} {	return }
-	putchan $c "[ping $t]"
+
+proc pubbplugin {n c t} {
+  return [ping $t]
 }
-proc privping {n u h c t} { putnotc $n "[ping $t]" }
 
 setctx lains
-bind pub - .ping pubping
-bind pub - |ping privping
 bind pub - .itemdbparse itemdbparse
 bind join - * onjoinmsg
 
