@@ -29,9 +29,9 @@ proc onjoinmsg {nick host hand chan} {
 	}
   if {[lsearch -exact [channel info $chan] "lainai"] == -1} { return }
   if {[regexp {(mibbit|webchat)} $host]} { 
-    set lainailist($nick) 5
+    set lainailist($nick) 3
   } else {
-    set lainailist($nick) 2
+    set lainailist($nick) 1
   }
 }
 
