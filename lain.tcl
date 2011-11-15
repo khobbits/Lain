@@ -13,7 +13,6 @@ proc pubping {n c t} {
 }
 
 setctx lains
-bind pub - .itemdbparse itemdbparse
 bind join - * onjoinmsg
 
 proc onjoinmsg {nick host hand chan} {
