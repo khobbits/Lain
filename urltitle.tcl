@@ -358,9 +358,9 @@ proc urldecode {content} {
 }
 
 global khfloodlines khfloodin khflood_array khfloodlinespub
-set khfloodlines 6
-set khfloodlinespub 4
-set khfloodin 30
+set khfloodlines 8
+set khfloodlinespub 3
+set khfloodin 60
 variable khflood_array
 if { [info exists khflood_array] == 1} { unset khflood_array }
 
@@ -416,3 +416,5 @@ proc strip-html {html} {
    }
    return [join $html2]
 }
+
+return "URL parser is loaded-dattebayo"
