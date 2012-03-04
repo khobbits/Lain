@@ -1,37 +1,43 @@
 package require http
+package require mysqltcl
+
+setctx lains;
 proc ressbuild {nick chan text} {
-	return "Essentials recommended build [lindex [essbuild "bt22"] 1]: http://tiny.cc/EssentialsFullZip"
+	return "Essentials recommended build [lindex [essbuild "bt3"] 1]: http://dev.bukkit.org/server-mods/essentials/"
 }
 
 proc pressbuild {nick chan text {softfail 0}} {
-  set pre [essbuild "bt23"]
-  set rel [essbuild "bt22"]
+  set pre [essbuild "bt9"]
+  set rel [essbuild "bt3"]
   if {[expr {[lindex $rel 0] + 60}] > [lindex $pre 0]} {
     if {$softfail} {
       return
     }
     return [ressbuild $nick $chan $text]
   }
-	return "Essentials pre-release build [lindex [essbuild "bt23"] 1]: http://tiny.cc/EssentialsPre"
+	return "Essentials pre-release build [lindex [essbuild "bt9"] 1]: http://tiny.cc/EssentialsPre"
 }
 
 proc dessbuild {nick chan text} {
-	return "Essentials development build [lindex [essbuild "bt2"] 1]: http://tiny.cc/EssentialsDev"
+	set b28 "Essentials development build [lindex [essbuild "bt2"] 1]: http://wiki.ess3.net/wiki/Downloads/Dev"
+	#set b30 "Essentials \00304super unstable\003 build [lindex [essbuild "bt18"] 1]: http://wiki.ess3.net/wiki/Downloads/Dev"
+	#return "$b28 \n$b30"
+  return "$b28"
 }
 
 proc essver {nick chan text} {
-	return "Essentials release build: [lindex [essbuild "bt22"] 1] :: Essentials pre-release build: [essbuild "bt23"] :: Essentials development build: [essbuild "bt2"]"
+	return "Essentials release build: [lindex [essbuild "bt3"] 1] :: Essentials pre-release build: [essbuild "bt9"] :: Essentials development build: [essbuild "bt2"]"
 }
 
 proc essbuild {build} {
     set number Sockfail
 	set result [catch {
-    set raw [http::data [http::geturl "http://ess.khhq.net/build/build.php?build=${build}&date=1&timeout=1"  -timeout 2600]]
+		set raw [http::data [http::geturl "http://essdirect.khhq.net/build/build.php?build=${build}&date=1&timeout=1"  -timeout 2600]]
 		set number [lindex [split $raw "\n"] 0]
-    set rawdate [lindex [split $raw "\n"] 1]
+		set rawdate [lindex [split $raw "\n"] 1]
 		set rawdate [split $rawdate {+-}]
 		if {[llength [split $rawdate { }]] > 3} { return 1 }
-    set rawdate [clock scan [lindex $rawdate 0] -gmt 1]
+		set rawdate [clock scan [lindex $rawdate 0] -gmt 1]
 		set date [expr {$rawdate + (4*60*60)}]
 		set date [clock format $date -format "%d-%b-%Y %H:%M" -gmt 1]
 	} error]
@@ -43,28 +49,46 @@ proc essbuild {build} {
 	}
 }
 
-proc bukkitbuild {nick chan text} {
+
+proc bukkitbuildraw {branch} {
 	set result [catch {
-		set number [http::data [http::geturl "http://ci.bukkit.org/job/dev-CraftBukkit/Recommended/buildNumber" -timeout 3000]]
-		set date [http::data [http::geturl "http://ci.bukkit.org/job/dev-CraftBukkit/Recommended/buildTimestamp?format=d-MMM-yyyy+HH:mm"  -timeout 3000]]
-		if {[llength [split $number { }]] > 1} { return 1 }
+    set url [http::geturl "http://dl.bukkit.org/api/1.0/downloads/projects/craftbukkit/view/latest-${branch}/" -timeout 3000]
+    if {[http::ncode $url] != "200"} { return 1 }
+		set data [http::data $url]    
+    set dict [::json::json2dict $data]
 	} error]
 	if {$result > 0} {
 		putmainlog "Debug Error fetching bukkitbuild!"
-		return "Unknown - Site offline"
-	} else {
-		return "CraftBukkit recommended build \00312\002$number\002\00302 ($date)\003: http://ci.bukkit.org/job/dev-CraftBukkit/Recommended/"
+		return 0
 	}
+    return $dict
+}
+
+proc bukkitbuildformat {build} {
+    set dict [bukkitbuildraw ${build}]
+    if {$dict == 0} {
+      set number "Unknown"
+      set date "Site offline"
+    } else {
+      set number [dict get $dict build_number]
+      set date [dict get $dict created]
+    }
+    if {$build == "rb"} { set sbuild "recommended" } else { set sbuild $build }
+	return "CraftBukkit $sbuild build \00312\002$number\002\00302 ($date)\003: http://dl.bukkit.org/downloads/craftbukkit/list/${build}/"
+}
+
+proc bukkitbuild {nick chan text} {
+return "[bukkitbuildformat rb]\n[bukkitbuildformat beta]"
 }
 
 proc build {nick chan text} {
-  set preress [pressbuild $nick $chan $text 1]
+	set preress [pressbuild $nick $chan $text 1]
 	set ress [ressbuild $nick $chan $text]
 	set bukkit [bukkitbuild $nick $chan $text]
 	return "${preress}\n${ress}\n$bukkit"
 }
 
-proc bukkitplugins {name {dev 0} {debug 0}} {
+proc bukkitplugins {name {dev 1} {debug 0}} {
   set url [::http::formatQuery pno 0 j {} title ${name} tag all inc_submissions false pageno 1 author {}]
   if {$dev == 1} {
   set data [::http::data [http::geturl http://plugins.bukkit.org/curseforge/data.php?$url -headers {X-I-Am-A-Bot Lain User-Agent Lain} -timeout 5000]]
@@ -80,15 +104,45 @@ proc bukkitplugins {name {dev 0} {debug 0}} {
 	set dict [::json::json2dict $data]    
 	return [dict get $dict realdata]
 }
-proc bplugin {name} {
-	set data [bukkitplugins $name]
-	set prefix {{Bukkit Lookup}}
-  set result $prefix
+
+proc bplugincore {name} {
+	set data [bukkitplugins $name 1]
+	set result {}
 	foreach match $data {
-		set title [dict get $match title]
-		set author [dict get $match author]
-		set id [dict get $match threadid]
-		set reply "$title by $author \00312http://forums.bukkit.org/threads/${id}/\003"
+		set title "Unknown"
+		set authors "Unknown"
+		set id "Unknown"
+		set reply ""
+		catch {
+		  lappend reply [dict get $match title]
+		  set users [dict get $match users]    
+		  set authors ""
+		  foreach author $users {
+			lappend authors "[lindex $author 3]"
+		  }
+		  if {[llength $authors] > 3} {
+			set authors "[join [lrange $authors 0 2] {, }]..."
+		  } else {
+			set authors [join $authors {, }]
+		  }
+		  lappend reply $authors
+		  set id [dict get $match curseforge_slug]
+		  lappend reply "http://dev.bukkit.org/server-mods/${id}/"
+		}
+		lappend result $reply
+	}
+	return $result
+}
+
+proc bplugin {name} {
+	set data [bplugincore $name]
+	set prefix {{Bukkit Lookup}}
+	set result $prefix
+	foreach match $data {
+    set title [lindex $match 0]
+		set authors [lindex $match 1]   
+		set id [lindex $match 2]
+		set reply "$title by $authors - \00312${id}\003"
     if {[string match -nocase "*$name*" [lrange [split $title { }] 0 1]]} {
       set result $prefix      
       lappend result $reply
@@ -101,13 +155,13 @@ proc bplugin {name} {
 }
 
 proc bplugins {name {results 1}} {
-	set data [bukkitplugins $name]
+	set data [bplugincore $name]
 	set prefix {{Bukkit Lookup}}
-  set result $prefix
+	set result $prefix
 	foreach match $data {
-		set title [dict get $match title]
-		set author [dict get $match author]
-		set id [dict get $match threadid]
+    set title [lindex $match 0]
+		#set authors [lindex $match 1]   
+		#set id [lindex $match 2]    
 		set reply "$title"
 		lappend result $reply
 		if {[llength $result] > $results} { break }
@@ -129,13 +183,15 @@ proc yamlpost {n c t} {
     set type [lindex [split $t { }] 0]
     set t [lrange [split $t { }] 1 end] 
   } elseif {[string length $t] < 10} {
-    putnotc $n "Syntax: yaml \[ggroup/guser/pgroup/puser\] <url> - Uses http://ess.khhq.net/yaml/"
+    putchan $c "Syntax: yaml \[g|p|b\]\[groups|users\] <url> - Uses http://wiki.ess3.net/yaml/"
     return 
   } else {
     set type "other"
   }
   
   switch $type {
+    bgroups -
+    busers -
     pgroups -
     pusers -
     ggroups -
@@ -143,7 +199,7 @@ proc yamlpost {n c t} {
       set notice ""  
     }
     default {
-      set notice "No valid type given (ggroups/gusers/pgroups/pusers) defaulting to plain yaml."
+      set notice "No valid type given (ggroups/gusers/bgroups/busers/pgroups/pusers) defaulting to plain yaml."
       set type "other"
     }
   }
@@ -155,13 +211,13 @@ proc yamlpost {n c t} {
 	  
     set url "http://pastebin.com/raw.php?i=$suffix"
   } else { 
-     	putnotc $n "This command only supports pastie.org and pastebin.com.  Can paste directly: http://ess.khhq.net/yaml/"
-			return
+     	putnotc $n "This command only supports pastie.org and pastebin.com.  Can paste directly: http://wiki.ess3.net/yaml/"
+		return
   }
   if {![regexp -nocase {^((f|ht)tp(s|)://|www\.[^\.]+\.)} $t] || \
 					[regexp {://([^/:]*:([^/]*@|\d+(/|$))|.*/\.)} $t]} {
-					putnotc $n "That isn't a valid url?"
-					return
+		putnotc $n "That isn't a valid url?"
+		return
 	}
 
   if {$notice != ""} { putnotc $n $notice }
@@ -179,7 +235,7 @@ proc yamlpost {n c t} {
   set data [::http::data $sock]
 	
 	set data [::http::formatQuery yaml $data type $type]
-	set data [::http::data [http::geturl http://ess.khhq.net/yaml/post.php?lite=1 -query $data -headers {X-I-Am-A-Bot Lain} -timeout 4000]]
+	set data [::http::data [http::geturl http://essdirect.khhq.net/yaml/post.php?lite=1 -query $data -headers {X-I-Am-A-Bot Lain} -timeout 4000]]
 	
 	if {[lindex [split $data { }] 0] != "pid"} {
     putnotc $n "Yaml failed to post"
@@ -187,10 +243,9 @@ proc yamlpost {n c t} {
   }
   set pid [lindex [split $data { }] 1]  
   set url [::http::formatQuery lite 1 pid $pid]
-  set data [::http::data [http::geturl http://ess.khhq.net/yaml/check.php?$url -headers {X-I-Am-A-Bot Lain} -timeout 4000]]
-  if {$data != "Passed"} { set data "Failed, see URL" }
-  
-	return "Yaml check ($type) $data - http://ess.khhq.net/yaml/$pid"
+  set data [::http::data [http::geturl http://essdirect.khhq.net/yaml/check.php?$url -headers {X-I-Am-A-Bot Lain} -timeout 4000]]
+  if {$data != "Passed"} { set data "\00304Failed, see URL" }
+  return "Yaml check ($type) \00303$data \003- http://wiki.ess3.net/yaml/$pid"
 }
 
 proc mysqlq {query} {
@@ -271,5 +326,4 @@ proc picktitledelim {itemlist c delim} {
  return $result
 }
 
-
-
+return "You just reloaded the ess shit, yo"
