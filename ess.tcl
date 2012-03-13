@@ -1,5 +1,6 @@
 package require http
 package require mysqltcl
+package require json
 
 setctx lains;
 proc ressbuild {nick chan text} {
