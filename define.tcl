@@ -14,9 +14,6 @@ bind pub - .getcmd getcmd
 
 bind pubm - "*" show_fct
 
-package require json
-
-
 global "dirname"
 set dirname "custcmd"
 
