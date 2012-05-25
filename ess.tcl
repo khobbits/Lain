@@ -249,6 +249,64 @@ proc yamlpost {n c t} {
   return "Yaml check ($type) \00303$data \003- http://wiki.ess3.net/yaml/$pid"
 }
 
+proc itemdbparse {n u h c t} {
+	if {[isop $n $c] == 0 && [matchattr $h o] == 0 } {
+		putnotc $n "You need to be an op to reload the database"
+		return 0
+	}
+
+	global itemdb;
+	array unset itemdb
+	#set data [http::data [http::geturl http://pastebin.com/raw.php?i=hAR0Vgse]];
+	#set data [http::data [http::geturl http://pastebin.com/raw.php?i=886jcrcM]];
+  set data [http::data [http::geturl http://pastebin.com/raw.php?i=Y3yw0RXG]];
+	set errorc 0
+	set lineno 0
+	set lastid 0
+	foreach line [split $data "\n"] {
+		incr lineno
+		set line [split $line {,}];
+		if {[string match "#*" [join $line]]} { continue }
+		if {[llength $line] != 3} { putnotc $n "Syntax error: Each line needs 3 parameters: '$line' Line: $lineno " }
+		if {$line != [string tolower $line]} { putnotc $n "Syntax error: Casing error: '$line' Line: $lineno " }	
+		set item [lindex $line 0]
+		set id [lindex $line 1]
+		set mod [lindex $line 2]
+		if {$lastid > $id} { putnotc $n "Syntax error: Error in item order ($lastid & $id): near to '$line' Line: $lineno " }
+		set lastid $id
+		if {[info exists itemdb($item)]} {
+			putnotc $n "Warning: Duplicate item == $itemdb($item) & ${id}:${mod} == Lines: $itemdbline($item) & $lineno == $item"
+			incr errorc
+		}
+		set itemdbline($item) $lineno
+		set itemdb($item) ${id}:${mod}
+		lappend itemdb(${id}:${mod}) $item
+		lappend itemdb($id) $item
+	}
+	putserv "privmsg $c :Reloaded item DB.  Parsed $lineno lines and found $errorc duplicates."
+}
+
+proc itemdblookup {n c t} {
+	global itemdb;
+	if {[array size itemdb] < 10} {
+		return "ItemDB: Not loaded, get an OP to type .itemdbparse"
+	}
+	set t [string tolower [join $t {:}]]
+	if {[info exists itemdb($t)]} {
+		if {[llength $itemdb($t)] > 12} {
+			if {[info exists itemdb($t:0)]} {
+				return [itemdblookup $n $c "$t:0"]
+			}
+			set result "${t}: [llength $itemdb($t)] aliases... [join [lrange $itemdb($t) 0 12] {,}]..."
+		} else {
+			set result "${t}: [join $itemdb($t) {,}]"
+		}
+	} else {
+		set result "item $t not found."
+	}
+	return "ItemDB: $result"
+}
+
 proc mysqlq {query} {
   package require mysqltcl
   set dbname "ess"
