@@ -91,8 +91,10 @@ proc lainai {nick host hand chan text} {
         putchan $chan "Hi, ${nick}, If you're looking to get whitelisted check: http://tiny.cc/HCSMP - Remember, please do not ask admins for expedited whitelisting!"
       } elseif {$chan == "#heroes"} {      
         putchan $chan "\00304\[\00312Automsg\00304\]\003 ${nick}: If you have a question, please just ask it and wait for a reply. Type .listcmd to see available commands."
+      } elseif {$chan == "#worldguard" || $chan == "#worldedit"} {      
+        putchan $chan "\00304\[\00312Automsg\00304\]\003 ${nick}: If you have a question, please just ask it \036in the channel\036 and wait for a reply."
       } else {
-        putchan $chan "\00304\[\00312Automsg\00304\]\003 ${nick}: If you have a question, please just ask it and wait for a reply."
+        putchan $chan "\00304\[\00312Automsg\00304\]\003 ${nick}: If you have a question, please just ask it in the channel and wait for a reply."
       }
     } elseif {$lainailist($nick) > 1} { incr lainailist($nick) -1 } else { unset lainailist($nick) }    
   }

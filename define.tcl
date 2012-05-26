@@ -1,3 +1,12 @@
+setctx sparhawk
+bind pub - .custcmd listcmd
+bind pub - .listcmd listcmd
+bind pub - .setcmd setcmd
+bind pub - .addalias aliascmd
+bind pub - .appcmd appcmd
+bind pub - .getcmd getcmd
+bind pubm - "*" show_fct
+
 setctx lains
 bind pub - |custcmd listcmd
 bind pub - |listcmd listcmd
@@ -143,7 +152,7 @@ proc aliascmd { nick userhost handle chan arg } {
         if {[file exists $dirname/$chan/${alias}.cmd] == 1} {
             set readdb [readdb $dirname/$chan/${alias}.cmd]
             file delete $dirname/$chan/${alias}.cmd
-            putnotc $nick "Deleting command with the name '${cmd}'  Old content:"
+            putnotc $nick "Deleting command with the name '${alias}'  Old content:"
             putnotc $nick "Custcmd '.${alias}': $readdb"
         }
         if {[file exists $dirname/$chan/$aliasf] == 0} {
@@ -344,8 +353,8 @@ proc listcmd { nick userhost handle chan arg } {
 
     set i 0
     while {$i < [llength $cmd]} {
-        putnotc $nick "\00304CustCmds for ${chan}:\003 [lrange $cmd $i [expr {$i + 39}]]"
-        incr i 40
+        putnotc $nick "\00304CustCmds for ${chan}:\003 [lrange $cmd $i [expr {$i + 47}]]"
+        incr i 48
     }
     putnotc $nick "\00304CustProc for ${chan}:\003 $proc \00304PublicCmds:\003 url log tail stats"
 }

@@ -27,7 +27,7 @@ proc dessbuild {nick chan text} {
 }
 
 proc essver {nick chan text} {
-	return "Essentials release build: [lindex [essbuild "bt3"] 1] :: Essentials pre-release build: [essbuild "bt9"] :: Essentials development build: [essbuild "bt2"]"
+	return "Essentials release build: [lindex [essbuild "bt3"] 1] :: Essentials pre-release build: [lindex [essbuild "bt9"] 1] :: Essentials development build: [lindex [essbuild "bt2"] 1]"
 }
 
 proc essbuild {build} {
@@ -39,14 +39,14 @@ proc essbuild {build} {
 		set rawdate [split $rawdate {+-}]
 		if {[llength [split $rawdate { }]] > 3} { return 1 }
 		set rawdate [clock scan [lindex $rawdate 0] -gmt 1]
-		set date [expr {$rawdate + (4*60*60)}]
+		set date [expr {$rawdate + (0*60*60)}]
 		set date [clock format $date -format "%d-%b-%Y %H:%M" -gmt 1]
 	} error]
 	if {$result > 0} {
 		putmainlog "Debug Error fetching essbuild $build: [string range $number 0 44]!"
 		return "Unknown - Site offline"
 	} else {
-		return "\{$rawdate\} \{\00312\002$number\002\00302 ($date)\003\}"
+		return "\{$rawdate\} \{\00312\002$number\002\00302 ($date UTC)\003\}"
 	}
 }
 
@@ -90,7 +90,8 @@ proc build {nick chan text} {
 }
 
 proc bukkitplugins {name {dev 1} {debug 0}} {
-  set url [::http::formatQuery pno 0 j {} title ${name} tag all inc_submissions false pageno 1 author {}]
+#set url [::http::formatQuery j {} title ${name} tag all inc_submissions false pageno 1 author {}]
+set url [::http::formatQuery j {} title ${name} tag all pageno 1 author {}]
   if {$dev == 1} {
   set data [::http::data [http::geturl http://plugins.bukkit.org/curseforge/data.php?$url -headers {X-I-Am-A-Bot Lain User-Agent Lain} -timeout 5000]]
   } else {
@@ -99,6 +100,8 @@ proc bukkitplugins {name {dev 1} {debug 0}} {
   if {$data == ""} { return "" }
     if {$debug == 1} {
         set log "[open "bukkitlookup.txt" w]"
+        puts $log $url
+        puts $log "\n\n"
         puts $log "$data"
         close $log
     }
@@ -208,11 +211,12 @@ proc yamlpost {n c t} {
   set suffix [lindex [split $t {/}] end]   
 	if {[string match -nocase "*pastie.org*" $t]} {     
     set url "http://pastie.org/pastes/$suffix/download"   
-  } elseif {[string match -nocase "*pastebin.com*" $t]} {
-	  
+  } elseif {[string match -nocase "*pastebin.com*" $t]} {	  
     set url "http://pastebin.com/raw.php?i=$suffix"
+  } elseif {[string match -nocase "*gist.github.com*" $t]} {	  
+    set url "https://raw.github.com/gist/${suffix}/gistfile1.txt"
   } else { 
-     	putnotc $n "This command only supports pastie.org and pastebin.com.  Can paste directly: http://wiki.ess3.net/yaml/"
+     	putnotc $n "This command only supports pastie.org, gist, and pastebin.com.  Can paste directly: http://wiki.ess3.net/yaml/"
 		return
   }
   if {![regexp -nocase {^((f|ht)tp(s|)://|www\.[^\.]+\.)} $t] || \
@@ -225,18 +229,20 @@ proc yamlpost {n c t} {
 
 	catch { set sock [http::geturl $url -headers {X-I-Am-A-Bot Lain} -timeout 2500] } error
 	if { [info exists sock] == "0" } {
-  	putnotc $n "Invalid paste url, or server is not responding."
+  	putnotc $n "Invalid paste url, or server is not responding. - $url"
+    putmainlog "YamlParse Error: $error - $url"
     return
   }
   set status [::http::ncode $sock]
   if {$status != "200"} {
-    putnotc $n "Invalid paste url, or server is not responding."
+    putnotc $n "Invalid paste url, or server is not responding. - $url"
+    putmainlog "YamlParse Error: Code: $status - $error - $url"
     return
   }
-  set data [::http::data $sock]
+  set yamlcontent [::http::data $sock]
 	
-	set data [::http::formatQuery yaml $data type $type]
-	set data [::http::data [http::geturl http://essdirect.khhq.net/yaml/post.php?lite=1 -query $data -headers {X-I-Am-A-Bot Lain} -timeout 4000]]
+	set postquery [::http::formatQuery yaml $yamlcontent type $type]
+	set data [::http::data [http::geturl http://essdirect.khhq.net/yaml/post.php?lite=1 -query $postquery -headers {X-I-Am-A-Bot Lain} -timeout 4000]]
 	
 	if {[lindex [split $data { }] 0] != "pid"} {
     putnotc $n "Yaml failed to post"

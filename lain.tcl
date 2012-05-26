@@ -8,8 +8,11 @@ proc ping {host} {
 }
 
 proc pubping {n c t} {
-  return [ping $t]
+  return [ping [lindex [split $t { }] 0]]
 }
+
+setctx sparhawk
+bind notc - * privnotice
 
 setctx Aphrael
 bind notc - * privnotice
@@ -169,6 +172,7 @@ proc chanManageDeVoice {nick chan text} {
 }
 
 proc isMinecraftUp {nick chan text} {
+    if {[llength [split $text { }]] == 0} { putnotc $nick "Syntax: .isup <host>\[:port\]"; return }
     if {[khflood $nick] >= 1} {	putnotc $nick "This command is spam throttled"; return }
     set text [split [lindex [split $text { }] 0] {:}]
     set host [lindex $text 0]
@@ -197,6 +201,12 @@ proc isMinecraftUp {nick chan text} {
      return 0
  }
 
+ # Connection handler for the port scanner. This is called both
+ # for a successful connection and a failed connection. We can
+ # check by trying to operate on the socket. A failed connection
+ # raises an error for fconfigure -peername. As we have no other
+ # work to do, we can close the socket here.
+ #
  proc isUp:connected {host port chan sock timer} {
     setctx lains;
     fileevent $sock writable {}

@@ -57,8 +57,10 @@ proc chanlog:text {nick uhost handle chan text} {
 
   if {$cmd == "|log"} { putnotc $nick "Channel Log available at: http://sbnc.khobbits.co.uk/log/logs/[chanlog:urlencode [string tolower [string trim $chan {#}]]].htm" }
   if {$cmd == "|tail"} { putnotc $nick "Channel Log available at: http://sbnc.khobbits.co.uk/log/logs/$tail/[chanlog:urlencode [string tolower [string trim $chan {#}]]].htm" }
+  if {$cmd == "|stats"} { putnotc $nick "Channel stats available at: http://sbnc.khobbits.co.uk/log/stats/[chanlog:urlencode [string tolower [string trim $chan {#}]]].htm" }
   if {$cmd == ".log"} { putnotc $nick "Channel Log available at: http://sbnc.khobbits.co.uk/log/logs/[chanlog:urlencode [string tolower [string trim $chan {#}]]].htm" }
   if {$cmd == ".tail"} { putnotc $nick "Channel Log available at: http://sbnc.khobbits.co.uk/log/logs/$tail/[chanlog:urlencode [string tolower [string trim $chan {#}]]].htm" }
+  if {$cmd == ".stats"} { putnotc $nick "Channel stats available at: http://sbnc.khobbits.co.uk/log/stats/[chanlog:urlencode [string tolower [string trim $chan {#}]]].htm" }
   if {[isop $nick $chan] == "1"} {
     set nick "\00306@$nick\003"
   } elseif {[ishalfop $nick $chan] == "1"} {
@@ -144,7 +146,8 @@ proc chanlog:format {text} {
 
 ### Time
 proc chanlog:time {} {
-  putmainlog "~ Cleaning up channel log binds - [getctx] ~"
+  setctx lains
+  putmainlog "~ Cleaning up channel log binds ~"
   foreach bind [binds time] {
     if {[string match "time * chanlog:time-save" $bind] == "1"} {
       unbind time - "[lindex $bind 2]" chanlog:time-save
@@ -152,26 +155,61 @@ proc chanlog:time {} {
   }  
   bind time - "00 00 [strftime "%d" [expr [unixtime] + 86400]] * *" chanlog:time-save
   bind time - "*" chanbroadcast
+  chanlog:stats channel stats
+  chanlog:stats longchannel longstats
 }
 
-proc chanlog:time-save {minute hour day month year} {
+proc chanlog:time-save {minute hour day month year} { 
+  setctx lains
+  foreach user {lains Aphrael} {
+    chanlog:rotate $user
+  }
+  
+  setctx lains
+  chanlog:time
+}
+
+proc chanlog:rotate {bot} {
+  setctx $bot
   global logdir botnick
   
+  putmainlog "Rotating channels for $bot"
   foreach chan [channels] {
     if {$chan == "#lain"} { continue }
-    if {[getctx] != "lains" && [onchan [getbncuser lains nick] $chan]} { continue }
+    if {[getctx] != "lains" && [onchan [getbncuser lains nick] $chan]} { 
+      putmainlog "Skipping rotate on $chan due to dupe"
+      continue
+    }
     set channel [chanlog:cformat $chan]
     if {[file exists "${logdir}$channel.htm"] == "1"} {
       file rename -force "${logdir}$channel.htm" "${logdir}old/${channel}_\[[strftime "%Y-%m-%d" [expr [unixtime] - 3600]]\].htm"
     }
     chanlog:join $botnick bot bot $chan
     putquick "TOPIC $chan"
-        
   }
-  chanlog:time
 }
 
+proc chanlog:stats {file version} {
 
+  global statdir
+  set stats "[open "${statdir}${file}.cfg" w]"
+  foreach user {lains Aphrael} {
+    setctx $user
+    foreach chan [channels] {
+      if {$chan == "#lain"} { continue }
+      if {[getctx] != "lains" && [onchan [getbncuser lains nick] $chan]} { continue }
+      set channel [chanlog:cformat $chan]
+      puts $stats "<channel=\"#${channel}\">
+                  LogDir=\"logs/old/2011/\"
+                  LogDir=\"logs/old/\"
+                  LogPrefix = \"${channel}_\"
+                  Logfile=\"logs/${channel}.htm\"
+                  OutputFile=\"${version}/${channel}.htm\"
+                  </channel>"    
+    }
+  }
+  close $stats
+}
 
 proc chanlog:urlencode {text} {
   set url ""
@@ -219,10 +257,7 @@ lappend broadcast {{30} {Lain} {Ping}}
 #lappend broadcast {{7} {#essentials} {\00304AutoMsg:\00306 If you need Essentials for the latest Bukkit Dev (1.2 R0), use \00312Dev[lindex [essbuild bt2] 1 0].\00306  However both Bukkit and Essentials have not been fully updated to 1.2 yet.}}
 #lappend broadcast {{13} {#essentials} {\00304AutoMsg:\00306 If you need Essentials for the latest Bukkit RB (1.1 R6), use \00312[lindex [essbuild bt3] 1 0]}}
 
-setctx lains;
-utimer 5 chanlog:time
-setctx Aphrael;
-utimer 10 chanlog:time
+utimer 5 [list chanlog:time]
 pingcheck 1
 
 return "The cogs are turning, and the channels be logging"

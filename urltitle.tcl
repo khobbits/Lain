@@ -7,6 +7,8 @@ setudef flag urltitle
 
 package require http			;# You need the http package..
 package require bee
+package require tls
+http::register https 443 ::tls::socket
 
 bind pub -|- ".url" pub:urltitle
 bind pub -|- "|url" pubn:urltitle
