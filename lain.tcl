@@ -57,6 +57,10 @@ proc chanManageKick {nick chan text} {
     set text [split $text { }]
     set target [lindex $text 0]
     set reason [lrange $text 1 end]
+    if {[isbotnick $target]} {
+       floodc:kick $chan $nick "Oops!"
+       return
+    }
     if {$target == "" || [string match *.* $target]} { 
       putnotc $nick "Syntax: .ban <nick/host> <reason>"
       return
