@@ -57,12 +57,12 @@ proc chanManageKick {nick chan text} {
     set text [split $text { }]
     set target [lindex $text 0]
     set reason [lrange $text 1 end]
-    if {[isbotnick $target]} {
-       floodc:kick $chan $nick "Oops!"
-       return
-    }
     if {$target == "" || [string match *.* $target]} { 
       putnotc $nick "Syntax: .ban <nick/host> <reason>"
+      return
+    }
+    if {[isbotnick $target]} {
+      floodc:kick $chan $nick "Baka!"
       return
     }
     
@@ -141,8 +141,8 @@ proc chanManageBanTime {nick chan time text} {
         return
     }
   
-    newchanban $chan [maskhost [getchanhost $target]] "ManagedBans" $reason $time sticky
-	floodc:kick $chan $target $reason
+    newchanban $chan [hostmask [getchanhost $target]] "ManagedBans" $reason $time sticky
+	  floodc:kick $chan $target $reason
     putnotc $nick "KickBanning $target ($time min)"
     return
 }
@@ -173,6 +173,35 @@ proc chanManageDeVoice {nick chan text} {
     }
     pushmode $chan "-v" $nick
     return
+}
+
+proc hostmask {args} {
+  if {[llength $args] != 1} {
+    return -code error "wrong # args: should be \"hostmask nick!user@host\""
+  }
+  set args [join $args]
+  
+  if {[string first "@" $args] == -1} {
+    set host [join $args]
+  } else {
+    set host [join [lrange [split $args @] 1 end] @]
+  }
+
+  if {[string first "!" $args] != -1 && ![string equal $args $host]} {
+    set user [join [lrange [split [lindex [split $args @] 0] !] 1 end] !]
+  } elseif {[string first "!" $args] == -1 && ![string equal $args $host]} {
+    set user [lindex [split $args @] 0]
+  } else {
+    set user "*"
+  }
+  
+  if {[string tolower $user] == "webchat" || [string tolower $user] == "mibbit"} {
+    set hostmask "*!*@${host}"
+  } else {
+    set hostmask [maskhost $args]
+  }
+  
+  return $hostmask
 }
 
 proc isMinecraftUp {nick chan text} {
