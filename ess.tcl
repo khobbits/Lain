@@ -265,7 +265,8 @@ proc itemdbparse {n u h c t} {
 	array unset itemdb
 	#set data [http::data [http::geturl http://pastebin.com/raw.php?i=hAR0Vgse]];
 	#set data [http::data [http::geturl http://pastebin.com/raw.php?i=886jcrcM]];
-  set data [http::data [http::geturl http://pastebin.com/raw.php?i=Y3yw0RXG]];
+  #set data [http::data [http::geturl http://pastebin.com/raw.php?i=Y3yw0RXG]];
+  set data [http::data [http::geturl http://pastebin.com/raw.php?i=k3CUCadR]];
 	set errorc 0
 	set lineno 0
 	set lastid 0
@@ -294,6 +295,7 @@ proc itemdbparse {n u h c t} {
 
 proc itemdblookup {n c t} {
 	global itemdb;
+  if {[string length $t] < 2} { return "\00304ItemDB:\003 Please supply a valid search term" }
 	if {[array size itemdb] < 10} {
 		return "ItemDB: Not loaded, get an OP to type .itemdbparse"
 	}

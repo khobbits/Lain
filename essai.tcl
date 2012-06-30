@@ -25,13 +25,13 @@ proc essai {nick host hand chan text} {
   } elseif {[regexp -nocase {((signs?).{1,20}(don.?t|won.?t|aren.?t|does.not|are.not|are|stop(ped)?)?.{0,10}(disable|work|broke|register|show|blue|color|colour)|(enable|disable|turn.on|toggle|(can.?t).{1,10}(use|make|place|create)).{1,15}(signs?))} $text]} {
 		essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 Since 2.8.1 Essentials signs are now disabled by default, you can enable each sign type individually in the config.yml.  People with the old config 'signs-disabled' will need to update to the new config."
     essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 For more information and for sign usage advice: \00312http://ess.khhq.net/wiki/Sign_Tutorial"
-  } elseif {[regexp -nocase {(command.?cost)} $text]} {
+  } elseif {[regexp -nocase {(comm?and.?cost)} $text]} {
 		essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 OPs and Admins will usually not get charged for commands/kits due to the essentials.nocommandcost.* permissions."  
   } elseif {[regexp -nocase {((conflict|interfer|disable|deact.vate).*(conomy|eco|vault)|(conomy|eco|vault).*(conflict|interfer|disable|deact.vate))} $text]} {
 		essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 There are no known conflicts between Essentials and other economy systems, Essentials will switch to use iConomy/BOSE/Vault if it is installed."
   } elseif {[regexp -nocase {(pour|use|place).?((bucket|bukkit).?.?.?(of)?)?.?(water|lava)} $text]} {
 		essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 By default, EssentialsProtect disables placing water and lava, to disable this look for blacklist/placement in the config.yml"
-  } elseif {[regexp -nocase {(disable|block).?(command|\/)} $text]} {
+  } elseif {[regexp -nocase {(disable|block).?(co?mm?a?n?d|\/)} $text]} {
 		essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 The easiest way to disable a command, is to simply not give anyone permission to use it."
   } elseif {[regexp -nocase {(((change|set|alter)(.?(to|the))?.?(lang|locale|english|german|french|dutch|message))|(lang|english|german|french|dutch|essentials).?(transe?lation|lang|locale))} $text]} {
 		essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 You can change the default language of Essentials by setting the 'Locale' option in the config file. - \00312http://ess.khhq.net/wiki/Locale"
@@ -46,9 +46,17 @@ proc essai {nick host hand chan text} {
 		essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 If you are having problems with Essentials it's a good idea to check your server log for errors, if you can't understand it, pastebin the startup log and errors so we can see."
   } elseif {[regexp -nocase {(geoip|(plugin|jar|each.one|download|file|module).does|breakdown)} $text]} {
 		essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 For a breakdown on which Essentials module does: \00312http://ess.khhq.net/wiki/Breakdown"
+  } elseif {[regexp -nocase {(do.?n.?t|does?n?.?t|no).((have|has).)?perm} $text]} {
+		essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 If you are having permission problems, try checking if the permission is applied to the player.  For GM the command is: manucheckp <player> <permission>"
+  } elseif {[regexp -nocase {(compass|click.(jump|teleport))} $text]} {
+		essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 Essentials does not provide a 'compass teleport' but you can use /jump or use (/pt jump) to turn any item into a teleport item"
+  } elseif {[regexp -nocase {(remove|stop|delete|delite).{1,20}(info).{1,20}(co?mm?a?n?d|click|use)} $text]} {
+		essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 The Essentials /info command simply displays the contents of info.txt. Other plugins often replace this command. You can use an alias to avoid this such as /news or /einfo"
+  } elseif {[regexp -nocase {((co?mm?a?n?d).{1,20}(confli?ct|overlap|overr?ight|overwrite|remove|block|stop))|((delete|delite|remove|stop).{1,20}(co?mm?a?n?d))} $text]} {
+		essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 Essentials generally will not conflict with other plugin commands, and gives priority to other plugins whenever possible.  If you think another plugin is overlapping, you can still use the Essentials version by using the backup syntax: /e<command>"
 	} elseif {[regexp -nocase {(xmpp)} $text]} {
 		essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 For help/details on EssentialsXMPP: \00312http://ess.khhq.net/wiki/XMPP"
-  } elseif {[regexp -nocase {(signs?)} $text]} {
+  } elseif {[regexp -nocase {(\ysigns?)} $text]} {
     essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 If you need help making signs, check out this usage guide: \00312http://ess.khhq.net/wiki/Sign_Tutorial"
   } elseif {[regexp -nocase {((thank|thx|help).*lain|lain.*(can.you|help)|lain:)} $text]} {
 		essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 I am Lain, Essentials Support Help Bot, you can find my commands with .listcmd"
