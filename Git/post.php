@@ -33,15 +33,17 @@ if (!isset($_POST['payload']))
 function get_gitio_url($url)
 {
 	$ch = curl_init();
-	curl_setopt($ch, CURLOPT_URL, "http://git.io/");
-	curl_setopt($ch, CURLOPT_HEADER, true);
+	curl_setopt($ch, CURLOPT_URL, "http://git.io/create");
+	curl_setopt($ch, CURLOPT_HEADER, false);
 	curl_setopt($ch, CURLOPT_POST, true);
 	curl_setopt($ch, CURLOPT_POSTFIELDS, "url={$url}");
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 	$exec = curl_exec($ch);
+	//print "$exec";
 	// NOTE: may need to be mofidifed if the link doesn't include all possible characters to match other regex solutions could also be implemented
-	preg_match('/http\:\/\/git\.io\/([a-zA-Z0-9_\-]+)/', $exec, $matches);
-	return $matches[0];
+	// preg_match('/http\:\/\/git\.io\/([a-zA-Z0-9_\-]+)/', $exec, $matches);
+	//return $matches[0];
+	return "http://git.io/$exec";
 }
 
 // grab the payload post variable from the service hook
