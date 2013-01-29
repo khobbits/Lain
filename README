@@ -3,3 +3,15 @@ Lain is an sBNC bot, that handles things like channel statistics, channel loggin
 Like most sBNC bots, it is coded in TCL, and runs as a sBNC user, on a instance of shroud BNC.
 
 The scripts you find here, are coded to run on the sBNC user account 'lains' although this is easily changed.
+
+Q:
+How do I install this stuff?
+A:
+Read the description above.
+
+FAQ:
+Q:
+I'm getting the following error, how do i fix it?: Invalid command name "khfloodc"
+A:
+The khflood scripts are in the bottom of the urltitle.tcl, this will need to be loaded prior to the scripts that use it.
+This script helps to reduce the chance of people flooding the bot out by spamming commands.
