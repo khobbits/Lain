@@ -8,6 +8,10 @@ proc ping {host} {
 }
 
 proc pubping {n c t} {
+  if {[string length $t] < 4} {
+    putnotc $n "Syntax: .ping <host>"
+    return
+  }
   return [ping [lindex [split $t { }] 0]]
 }
 
@@ -58,11 +62,7 @@ proc chanManageKick {nick chan text} {
     set target [lindex $text 0]
     set reason [lrange $text 1 end]
     if {$target == "" || [string match *.* $target]} { 
-      putnotc $nick "Syntax: .ban <nick/host> <reason>"
-      return
-    }
-    if {[isbotnick $target]} {
-      floodc:kick $chan $nick "Baka!"
+      putnotc $nick "Syntax: .kick <nick> <reason>"
       return
     }
     
@@ -86,7 +86,7 @@ proc chanManageBanTemp {nick chan text} {
 }
 
 proc chanManageBan {nick chan text} {
- chanManageBanTime $nick $chan 1200 $text
+ chanManageBanTime $nick $chan 2880 $text
 }
 
 proc chanManageBanTime {nick chan time text} {
@@ -110,7 +110,11 @@ proc chanManageBanTime {nick chan time text} {
     }  
     set matches 0
    
-    if {[string match *.* $target] || [string match *@* $target]} { 
+    if {[string match *.* $target] || [string match *@* $target] || [string match *!* $target]} {
+      if {[ischanban $target $chan]} {
+        putnotc $nick "This ban already exists!"
+        return
+      }
       foreach posmatch [chanlist $chan] {
         if {[string match -nocase $target "$posmatch![getchanhost $posmatch]"] == 1} {
             if {[isvoice $posmatch $chan] || [isop $posmatch $chan] || [isbotnick $posmatch]} { 
@@ -140,10 +144,22 @@ proc chanManageBanTime {nick chan time text} {
         putnotc $nick "$target is not on $chan"
         return
     }
-  
-    newchanban $chan [hostmask [getchanhost $target]] "ManagedBans" $reason $time sticky
+    
+    if {[getchanhost $target] == ""} {
+        putnotc $nick "Invalid target"
+    }
+
+    set targetmask [hostmask [getchanhost $target]]
+
+
+    if {[ischanban $targetmask $chan]} {
+      putnotc $nick "This ban already exists!"
+      return
+    }
+
+    newchanban $chan $targetmask "ManagedBans" $reason $time sticky
 	  floodc:kick $chan $target $reason
-    putnotc $nick "KickBanning $target ($time min)"
+    putnotc $nick "KickBanning $target ($targetmask) ($time min)"
     return
 }
 
@@ -204,9 +220,17 @@ proc hostmask {args} {
   return $hostmask
 }
 
+proc ischanban {banmask channel} {
+  set result [lsearch -exact -index 0 [chanbans $channel] $banmask]
+  if {$result != -1} {
+    return 1
+  } else {
+    return 0
+  }
+}
+
 proc isMinecraftUp {nick chan text} {
-    if {[llength [split $text { }]] == 0} { putnotc $nick "Syntax: .isup <host>\[:port\]"; return }
-    if {[khflood $nick] >= 1} {	putnotc $nick "This command is spam throttled"; return }
+    if {[llength [split $text { }]] == 0} { putnotc $nick "Syntax: .isup <host>\[:port\]"; return }    
     set text [split [lindex [split $text { }] 0] {:}]
     set host [lindex $text 0]
     set port 25565
@@ -220,17 +244,16 @@ proc isMinecraftUp {nick chan text} {
         return
       }      
     }
-    
-    set r [catch {isUp:connect $host $port $chan} reply]
+    set r [catch {isUp:connect $host $port $chan [getctx]} reply]
     if {$r} {
         putchan $chan "\00304\[Port Check\]\00301 Error: $reply"
     }
 }
 
- proc isUp:connect {host port chan} {
+ proc isUp:connect {host port chan ctx} {
      set s [socket -async $host $port]
-     set timer [utimer 4 [list isUp:shutdown $host $port $chan $s]]
-     fileevent $s writable [list isUp:connected $host $port $chan $s $timer]     
+     set timer [utimer 4 [list isUp:shutdown $host $port $chan $ctx $s]]
+     fileevent $s writable [list isUp:connected $host $port $chan $ctx $s $timer]     
      return 0
  }
 
@@ -240,8 +263,8 @@ proc isMinecraftUp {nick chan text} {
  # raises an error for fconfigure -peername. As we have no other
  # work to do, we can close the socket here.
  #
- proc isUp:connected {host port chan sock timer} {
-    setctx lains;
+ proc isUp:connected {host port chan ctx sock timer} {
+    setctx $ctx;
     fileevent $sock writable {}
     set r [catch {fconfigure $sock -peername} msg]
     if { ! $r } {
@@ -253,9 +276,10 @@ proc isMinecraftUp {nick chan text} {
     catch {close $sock}
  }
 
- proc isUp:shutdown {host port chan sock} {
-     catch {close $sock}
-     putchan $chan "\00304\[Port Check\]\00301 Connection to ${host}:${port} failed."
+ proc isUp:shutdown {host port chan ctx sock} {
+    setctx $ctx
+    catch {close $sock}
+    putchan $chan "\00304\[Port Check\]\00301 Connection to ${host}:${port} failed."
  }
 
 

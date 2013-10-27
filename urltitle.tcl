@@ -19,6 +19,7 @@ proc pubn:urltitle {nick host user chan text} {
   if {![regexp -nocase {^((f|ht)tp(s|)://|www\.[^\.]+\.)} $word] || \
 					[regexp {://([^/:]*:([^/]*@|\d+(/|$))|.*/\.)} $word]} {
 					putnotc $nick "That isn't a valid url?"
+					return;
 	}
 				set word [string tolower $word 0 [string wordend $word 0]]
   set urtitle [urltitle $word 1]
@@ -31,10 +32,15 @@ proc pub:urltitle {nick host user chan text} {
   if {![regexp -nocase {^((f|ht)tp(s|)://|www\.[^\.]+\.)} $word] || \
 					[regexp {://([^/:]*:([^/]*@|\d+(/|$))|.*/\.)} $word]} {
 					putnotc $nick "That isn't a valid url?"
+					return;
 	}
 				set word [string tolower $word 0 [string wordend $word 0]]
   set urtitle [urltitle $word 1]
-  putchan $chan "$urtitle"
+  if {[lsearch -exact [channel info $chan] "urltitle"] != -1} {
+    putchan $chan "$urtitle"
+  } else {
+  	putnotc $nick "$urtitle"
+  }
 }
 
 bind pubm -|- "*" pubm:urltitle

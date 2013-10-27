@@ -3,6 +3,19 @@ package require mysqltcl
 package require json
 
 setctx lains;
+bind msg - |getess privgetess
+bind msg - |getessdev privgetessdev
+
+
+proc privgetess {nick host hand text} { 
+    putnotc $nick [ressbuild $nick "" $text]
+}
+
+proc privgetessdev {nick host hand text} { 
+    putnotc $nick [dessbuild $nick "" $text]
+}
+
+
 proc ressbuild {nick chan text} {
 	return "Essentials recommended build [lindex [essbuild "bt3"] 1]: http://dev.bukkit.org/server-mods/essentials/"
 }
@@ -20,7 +33,7 @@ proc pressbuild {nick chan text {softfail 0}} {
 }
 
 proc dessbuild {nick chan text} {
-	set b28 "Essentials development build [lindex [essbuild "bt2"] 1]: http://wiki.ess3.net/wiki/Downloads/Dev"
+	set b28 "Essentials development build [lindex [essbuild "bt2"] 1]: http://tiny.cc/essentialsDevFull"
 	#set b30 "Essentials \00304super unstable\003 build [lindex [essbuild "bt18"] 1]: http://wiki.ess3.net/wiki/Downloads/Dev"
 	#return "$b28 \n$b30"
   return "$b28"
@@ -89,106 +102,13 @@ proc build {nick chan text} {
 	return "${preress}\n${ress}\n$bukkit"
 }
 
-proc bukkitplugins {name {dev 1} {debug 0}} {
-#set url [::http::formatQuery j {} title ${name} tag all inc_submissions false pageno 1 author {}]
-set url [::http::formatQuery j {} title ${name} tag all pageno 1 author {}]
-  if {$dev == 1} {
-  set data [::http::data [http::geturl http://plugins.bukkit.org/curseforge/data.php?$url -headers {X-I-Am-A-Bot Lain User-Agent Lain} -timeout 5000]]
-  } else {
-  set data [::http::data [http::geturl http://plugins.bukkit.org/data.php?$url -headers {X-I-Am-A-Bot Lain User-Agent Lain} -timeout 5000]]
-  }
-  if {$data == ""} { return "" }
-    if {$debug == 1} {
-        set log "[open "bukkitlookup.txt" w]"
-        puts $log $url
-        puts $log "\n\n"
-        puts $log "$data"
-        close $log
-    }
-	set dict [::json::json2dict $data]    
-	return [dict get $dict realdata]
-}
-
-proc bplugincore {name} {
-	set data [bukkitplugins $name 1]
-	set result {}
-	foreach match $data {
-		set title "Unknown"
-		set authors "Unknown"
-		set id "Unknown"
-		set reply ""
-		catch {
-		  lappend reply [dict get $match title]
-		  set users [dict get $match users]    
-		  set authors ""
-		  foreach author $users {
-			lappend authors "[lindex $author 3]"
-		  }
-		  if {[llength $authors] > 3} {
-			set authors "[join [lrange $authors 0 2] {, }]..."
-		  } else {
-			set authors [join $authors {, }]
-		  }
-		  lappend reply $authors
-		  set id [dict get $match curseforge_slug]
-		  lappend reply "http://dev.bukkit.org/server-mods/${id}/"
-		}
-		lappend result $reply
-	}
-	return $result
-}
-
-proc bplugin {name} {
-	set data [bplugincore $name]
-	set prefix {{Bukkit Lookup}}
-	set result $prefix
-	foreach match $data {
-    set title [lindex $match 0]
-		set authors [lindex $match 1]   
-		set id [lindex $match 2]
-		set reply "$title by $authors - \00312${id}\003"
-    if {[string match -nocase "*$name*" [lrange [split $title { }] 0 1]]} {
-      set result $prefix      
-      lappend result $reply
-      break
-    }
-    lappend result $reply
-	}
-	if {[llength $result] < 2} {lappend result "No matches found for '$name'"}
-	return [join [lrange $result 0 1] " \00304::\003 "]
-}
-
-proc bplugins {name {results 1}} {
-	set data [bplugincore $name]
-	set prefix {{Bukkit Lookup}}
-	set result $prefix
-	foreach match $data {
-    set title [lindex $match 0]
-		#set authors [lindex $match 1]   
-		#set id [lindex $match 2]    
-		set reply "$title"
-		lappend result $reply
-		if {[llength $result] > $results} { break }
-	}
-	if {[llength $result] < 2} {lappend result "No matches found for '$name'"}
-	return [join $result " \00304::\003 "]
-}
-
-proc pubbplugin {n c t} {
-  return [bplugin $t]
-}
-
-proc pubbplugins {n c t} {
-  return [bplugins $t 4]
-}
 
 proc yamlpost {n c t} {
   if {[llength [split $t { }]] > 1} {
     set type [lindex [split $t { }] 0]
     set t [lrange [split $t { }] 1 end] 
   } elseif {[string length $t] < 10} {
-    putchan $c "Syntax: yaml \[g|p|b\]\[groups|users\] <url> - Uses http://wiki.ess3.net/yaml/"
-    return 
+    return "Syntax: yaml \[g|p|b\]\[groups|users\] <url> - Uses http://wiki.ess3.net/yaml/"
   } else {
     set type "other"
   }
@@ -266,7 +186,8 @@ proc itemdbparse {n u h c t} {
 	#set data [http::data [http::geturl http://pastebin.com/raw.php?i=hAR0Vgse]];
 	#set data [http::data [http::geturl http://pastebin.com/raw.php?i=886jcrcM]];
   #set data [http::data [http::geturl http://pastebin.com/raw.php?i=Y3yw0RXG]];
-  set data [http::data [http::geturl http://pastebin.com/raw.php?i=k3CUCadR]];
+ # set data [http::data [http::geturl http://pastebin.com/raw.php?i=k3CUCadR]];
+  set data [http::data [http::geturl https://raw.github.com/essentials/Essentials/2.x/Essentials/src/items.csv]];
 	set errorc 0
 	set lineno 0
 	set lastid 0
@@ -331,64 +252,140 @@ proc esscmd {n c t} {
   set dbname "ess"
   set dbuser "ess"
   set dbpasswd {}
+  set ver 0
+  set type trigger
   set operm 0
-  set oinfo 1
-  set ta [split $t { }]
-  if {[llength $ta] > 1} {
-    set opt [lindex $ta 0]
-    if {$opt == "-perm"} {
-      set oinfo 0
+  set opermonly 0
+  set oinfo 0
+
+  if {[llength [split $t { }]] > 0} {
+    if {[lindex [split $t { }] 0] == "-ver" && [llength [split $t { }]] > 2} {
+      set ver [lindex [split $t { }] 1]
+      set t [join [lrange [split $t { }] 2 end]]
+    }
+
+    if {[lindex [split $t { }] 0] == "-perm" && [llength [split $t { }]] > 1} {
       set operm 1
-      set t [join [lrange $t 1 end]]       
+      set t [join [lrange [split $t { }] 1 end]]
+    } elseif {[string match -nocase "perm:*" [lindex [split $t { }] 0]]} {
+      set type perm
+      set opermonly 1
+      set t [join [lrange [split $t {:}] 1 end]]       
+    } else {
+      set oinfo 1
     }
   }
-  if {[string length $t] < 2} { return "\00304CmdHelp:\003 Please supply a valid search term" }
-  
-  set db [::mysql::connect -user $dbuser -password $dbpasswd -db $dbname]
-  set t [::mysql::escape $db $t]
-  set result [::mysql::sel $db "SELECT * FROM `cmd_list` WHERE `trigger` LIKE '$t' OR `alias` LIKE '$t' OR `alias` LIKE '$t,%' OR `alias` LIKE '% $t,%' OR `alias` LIKE '% $t' LIMIT 20"  -list] 
-  if {$result == ""} {
-    set result [::mysql::sel $db "SELECT * FROM `cmd_list` WHERE `trigger` LIKE '%$t%' OR `alias` LIKE '%$t%' LIMIT 20" -list]
-    if {$result == ""} {
-      set result [::mysql::sel $db "SELECT * FROM `cmd_list` WHERE `desc` LIKE '%$t%' OR `perms` LIKE '%$t%' OR `syntax` LIKE '%$t%' LIMIT 20" -list]
-      ::mysql::close $db
-      if {[llength $result] >= 1} { return "\00304CmdHelp:\003 No matching command found, did you mean: [join [picktitle $result 2] {, }]" }
-      return "CmdHelp: No matching command found."
-    }      
-  }
-  ::mysql::close $db
-  set result [string map {"\r" {}} $result]
-  if {[llength $result] == 20} { return "\00304CmdHelp:\003 There were too many matches to display, please use a better search string." }
-  if {[llength $result] > 1} { return "\00304CmdHelp:\003 Command matches: [join [picktitle $result 2] {, }]" }  
-  
-  set trigger [lindex $result 0 2]
-  set desc [lindex $result 0 4]
-  set info [join [split [lindex $result 0 5] "\n"] {  }]
-  set syntax [join [split [lindex $result 0 6] "\n"] {  }]
-  
-  set perm [split [lindex $result 0 7] {,}]
-  
-  if {[llength $perm] > 3} { set perm [picktitledelim $perm 0 { - }] } 
-  
-  set perm [join $perm " \00304::\003 "]         
-   
-  set return "\00304CmdHelp:\003 $trigger \00304::\003 $desc \00304::\003 $syntax"
-  if {$operm} { append return "\n\00304Permissions:\003 $perm" }
-  if {$oinfo} { append return "\n\00304Info:\003 $info" }
 
+  set t [string trim $t]
+
+  if {[string length $t] < 2} { return "\00304CmdHelp:\003 Please supply a valid search term" }
+
+  set urldata [cmddbrawloop [apiurlbuilder $type $t $ver]]
+
+  if {$urldata == 0 || [dict get $urldata "status"] == "false"} {
+    putmainlog "CmdDB Error: $urldata"
+    return "\00304CmdHelp:\003 Something went wrong, bug KHobbits."
+  }
+
+  set results [dict get $urldata results]
+  if {[llength $results] == 20} { return "\00304CmdHelp:\003 There were too many matches to display, please use a better search string." }
+  if {[llength $results] == 0} { return "\00304CmdHelp:\003 There were no results found, please use a better search string." }
+
+  if {$opermonly} {
+    set count 3
+    if {[llength $results] > 6} { set count 6 } 
+    foreach perm $results {
+      set triggertext "([dict get $perm trigger]) "
+      if {$triggertext == "(None) "} {
+        set triggertext ""
+      }
+      if {[llength $results] < 5} {
+          lappend permlist "$triggertext[dict get $perm perm] - [dict get $perm pdesc]"
+        } else {          
+          lappend permlist "$triggertext[dict get $perm perm]"
+        }
+    }
+
+    set return  "\00304CmdHelp:\003 "
+
+    if {[llength $permlist] > 2} {
+      append return [join [lrange $permlist 0 [expr {([llength $permlist] / 2) - 1}]] " \00304::\003 "]
+      append return "\n\00304CmdHelp:\003 "
+      append return [join [lrange $permlist [expr {[llength $permlist] / 2}] end] " \00304::\003 "]
+    } else {
+      append return [join $permlist " \00304::\003 "]
+    }
+
+  } else {
+      
+    if {[llength $results] > 1} { return "\00304CmdHelp:\003 Command matches: [join [picktitle $results trigger] {, }]" } 
+    
+    set result [lindex $results 0]
+
+    set trigger [dict get $result trigger]
+    set desc [dict get $result desc]
+    
+    set syntax [join [split [dict get $result syntax] "\n"] {  }]
+   
+    set return "\00304CmdHelp:\003 $trigger \00304::\003 $desc \00304::\003 $syntax"
+    
+    if {$operm} { 
+      set perms [dict get $result perms]
+      set long 1
+      if {[llength $perms] > 3} { set long 0 } 
+
+      foreach perm $perms {
+        if {$long} {
+          lappend permlist "[dict get $perm perm] - [dict get $perm pdesc]"
+        } else {
+          lappend permlist [dict get $perm perm]
+        }
+      }
+      set permlist [join $permlist " \00304::\003 "]         
+      append return "\n\00304Permissions:\003 $permlist"
+    }
+
+    if {$oinfo} { 
+      set info [join [split [string map {"\r" {}} [dict get $result instr]] "\n"] {  }]
+      append return "\n\00304Info:\003 $info"    
+    }
+  }
+    
   return $return  
+}
+
+proc apiurlbuilder {type term ver} {
+  set query [http::formatQuery term $term type $type release $ver]
+  return "http://essdirect.khhq.net/doc/search?$query"
+}
+
+proc cmddbraw {url} {
+  set result [catch {
+    set url [http::geturl $url -timeout 1500]
+    if {[http::ncode $url] != "200"} { return 1 }
+    set data [http::data $url]    
+    set dict [::json::json2dict $data]
+  } error]
+  if {$result > 0} {
+    putmainlog "Debug Error fetching cmddb! - $error"
+    return 0
+  }
+    return $dict
+}
+
+proc cmddbrawloop {url} {
+  for {set x 0} {$x<3} {incr x} {
+    set result [cmddbraw $url]
+    if {$result != 0} {
+      return $result
+    }
+  }
+  return 0
 }
 
 proc picktitle {itemlist c} {
  foreach item $itemlist {
-  lappend result [lindex $item $c]
- }
- return $result
-}
-
-proc picktitledelim {itemlist c delim} {
- foreach item $itemlist {
-  lappend result [lindex [split [string map [list $delim \u0080] $item] \u0080] $c]
+  lappend result [dict get $item $c]
  }
  return $result
 }

@@ -70,7 +70,7 @@ proc chanlog:text {nick uhost handle chan text} {
   } else {
     set nick "\00303$nick\003"
   }
-  chanlog:save $chan "<$nick> $text"
+  chanlog:save $chan "\003<$nick> $text"
 }
 
 proc chanlog:nick {nick uhost handle chan newnick} {
@@ -176,7 +176,7 @@ proc chanlog:rotate {bot} {
   putmainlog "Rotating channels for $bot"
   foreach chan [channels] {
     if {$chan == "#lain"} { continue }
-    if {[getctx] != "lains" && [onchan [getbncuser lains nick] $chan]} { 
+    if {[getctx] != "lains" && [onchan [getbncuser lains nick] $chan]} {
       putmainlog "Skipping rotate on $chan due to dupe"
       continue
     }
@@ -200,12 +200,12 @@ proc chanlog:stats {file version} {
       if {[getctx] != "lains" && [onchan [getbncuser lains nick] $chan]} { continue }
       set channel [chanlog:cformat $chan]
       puts $stats "<channel=\"#${channel}\">
-                  LogDir=\"logs/old/2011/\"
+                  LogDir=\"logs/old/2012/\"
                   LogDir=\"logs/old/\"
-                  LogPrefix = \"${channel}_\"
+                  LogPrefix = \"${channel}_\\\[\"
                   Logfile=\"logs/${channel}.htm\"
                   OutputFile=\"${version}/${channel}.htm\"
-                  </channel>"    
+                  </channel>"
     }
   }
   close $stats
@@ -221,7 +221,7 @@ proc chanlog:urlencode {text} {
       append url $byte
     }
   }
-  return [string map {%2D - %30 0 %31 1 %32 2 %33 3 %34 4 %35 5 %36 6 %37 7 %38 8 %39 9 \[ %5B \\ %5C \] %5D \^ %5E \_ %5F \` %60} $url]      
+  return [string map {%2D - %30 0 %31 1 %32 2 %33 3 %34 4 %35 5 %36 6 %37 7 %38 8 %39 9 \[ %5B \\ %5C \] %5D \^ %5E \_ %5F \` %60} $url]
 }
 
 
@@ -235,7 +235,7 @@ proc pingcheck {count} {
   utimer 30 "pingcheck $count"
 }
 
-proc chanbroadcast {minute hour day month year} {    
+proc chanbroadcast {minute hour day month year} {
     if {[getctx] == "Aphrael"} { return }
     setctx lains
     set minute "${minute}.0"

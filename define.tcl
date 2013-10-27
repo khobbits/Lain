@@ -73,9 +73,11 @@ proc setcmd { nick userhost handle chan arg } {
             create_db "$chan" "$cmdf" "$msg"
             putnotc $nick "Created custom command '.${cmd}' for channel $chan.  Use .addalias <alias> <cmd> to create an alias."
         } else {
+            set readdb [readdb $dirname/$chan/$cmdf]
             file delete $dirname/$chan/$cmdf
             create_db "$chan" "$cmdf" "$msg"
-            putnotc $nick "Modifed custom command '.${cmd}' for channel $chan, remember .appcmd can pre/suffix existing commands."
+            putnotc $nick "Modified custom command '.${cmd}' for channel $chan, remember .appcmd can pre/suffix existing commands.  Old content:"
+            putnotc $nick "Custcmd '.${cmd}': $readdb"
         }
     } else {
         if {[file exists $dirname/$chan/$cmdf] == 1 && $cmd != ""} {
@@ -110,7 +112,7 @@ proc setproc { chan cmd proc } {
         } else {
             file delete $dirname/$chan/${cmd}.proc
             create_db "$chan" "${cmd}.proc" "$proc"
-            return "Modifed custom command '.${cmd}' for channel $chan"
+            return "Modified custom command '.${cmd}' for channel $chan"
         }
     } else {
         if {[file exists $dirname/$chan/${cmd}.proc] == 1 && $cmd != ""} {
@@ -159,9 +161,10 @@ proc aliascmd { nick userhost handle chan arg } {
             create_db "$chan" "$aliasf" "$cmdf"
             putnotc $nick "Created alias '.${alias}' for custom command '.${cmd}' for channel $chan"
         } else {
+            set readdb [readdb $dirname/$chan/$aliasf]
             file delete $dirname/$chan/$aliasf
             create_db "$chan" "$aliasf" "$cmdf"
-            putnotc $nick "Modifed custom command alias '.${alias}' for channel $chan."
+            putnotc $nick "Modified custom command alias '.${alias}' for channel $chan.  Old content: $readdb"
         }
     } else {
         if {[file exists $dirname/$chan/$aliasf] == 1 && $alias != ""} {
@@ -352,10 +355,14 @@ proc listcmd { nick userhost handle chan arg } {
     set proc [lsort [string map {{.alias} {} {.cmd} {} {.proc} {}} $proc]]
 
     set i 0
-    while {$i < [llength $cmd]} {
-        putnotc $nick "\00304CustCmds for ${chan}:\003 [lrange $cmd $i [expr {$i + 47}]]"
-        incr i 48
-    }
+	if {[llength $cmd] < 90} {
+		while {$i < [llength $cmd]} {
+			putnotc $nick "\00304CustCmds for ${chan}:\003 [lrange $cmd $i [expr {$i + 45}]]"
+			incr i 46
+		}
+	} else {
+		putnotc $nick "\00304CustCmds for ${chan}:\003 http://sbnc.khobbits.co.uk/setcmd/commands/%23[string tolower [string trim $chan {#}]]"
+	}
     putnotc $nick "\00304CustProc for ${chan}:\003 $proc \00304PublicCmds:\003 url log tail stats"
 }
 
