@@ -49,6 +49,7 @@ proc pubm:urltitle {nick host user chan text} {
 	if {[string match -nocase "*github*" $nick]} { return }
 	if {[string match -nocase "*script*" $nick]} { return }
 	if {[string match -nocase "crow" $nick]} { return }
+	if {[string match -nocase "*@*bot*" $host]} { return }
 	if {[khfloodc $nick] >= 1} {	return }
 	global urltitle
 	if {[lsearch -exact [channel info $chan] "urltitle"] != -1} {
