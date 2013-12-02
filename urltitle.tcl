@@ -57,6 +57,7 @@ proc pubm:urltitle {nick host user chan text} {
 			if {[string match -nocase "*pastebin*" $word]} { break }
 			if {[string match -nocase "*google*" $word]} { break }
 			if {[string match -nocase "*wiki*" $word]} { break }
+			if {[string match -nocase "*youtube*" $word]} { break }
 			if {[string length $word] >= $urltitle(length) && \
 					[regexp -nocase {^((f|ht)tp(s|)://|www\.[^\.]+\.)} $word] && \
 					![regexp {://([^/:]*:([^/]*@|\d+(/|$))|.*/\.)} $word]} {
