@@ -102,7 +102,7 @@ proc chanManageBanTime {nick chan time text} {
     set text [split $text { }]
     set target [lindex $text 0]
     set reason [lrange $text 1 end]
-    if {$target == "" || [string match *:* $target]} { 
+    if {$target == ""} { 
       putnotc $nick "Syntax: .ban <nick/host> <reason>"
       return
     }
@@ -155,8 +155,9 @@ proc chanManageBanTime {nick chan time text} {
 
     set targetmask [hostmask [getchanhost $target]]
 
-    if (![string match *!*@*.* $targetmask]) {
+    if (![string match *!*@*\[.:\]* $targetmask]) {
 	putnotc $nick "Invalid hostmask (${targetmask}): aborting, please try again!"
+	return
     }
 
     if {[ischanban $targetmask $chan]} {
