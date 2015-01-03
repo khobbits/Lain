@@ -82,7 +82,11 @@ proc chanManageKick {nick chan text} {
 }
 
 proc chanManageBanTemp {nick chan text} {
- chanManageBanTime $nick $chan 120 $text
+ chanManageBanTime $nick $chan 30 $text
+}
+
+proc chanManageBanTempLong {nick chan text} {
+ chanManageBanTime $nick $chan 180 $text
 }
 
 proc chanManageBan {nick chan text} {
@@ -151,6 +155,9 @@ proc chanManageBanTime {nick chan time text} {
 
     set targetmask [hostmask [getchanhost $target]]
 
+    if (![string match *!*@*.* $targetmask]) {
+	putnotc $nick "Invalid hostmask (${targetmask}): aborting, please try again!"
+    }
 
     if {[ischanban $targetmask $chan]} {
       putnotc $nick "This ban already exists!"

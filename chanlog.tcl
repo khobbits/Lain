@@ -159,12 +159,20 @@ proc chanlog:time {} {
   chanlog:stats longchannel longstats
 }
 
-proc chanlog:time-save {minute hour day month year} { 
+
+proc chanlog:time-save {minute hour day month year} {
+  setctx Aphrael
+  aphraelchanjoin
+  setctx lains
+  lainchanjoin
+  utimer 2 chanlog:stage2
+}
+
+proc chanlog:stage2 {} {
   setctx lains
   foreach user {lains Aphrael} {
     chanlog:rotate $user
   }
-  
   setctx lains
   chanlog:time
 }

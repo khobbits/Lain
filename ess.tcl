@@ -134,7 +134,7 @@ proc yamlpost {n c t} {
   } elseif {[string match -nocase "*pastebin.com*" $t]} {	  
     set url "http://pastebin.com/raw.php?i=$suffix"
   } elseif {[string match -nocase "*gist.github.com*" $t]} {	  
-    set url "https://raw.github.com/gist/${suffix}/gistfile1.txt"
+    set url "https://gist.github.com/[lindex [split $t {/}] end-1]/${suffix}/raw/gistfile1.txt"
   } else { 
      	putnotc $n "This command only supports pastie.org, gist, and pastebin.com.  Can paste directly: http://wiki.ess3.net/yaml/"
 		return

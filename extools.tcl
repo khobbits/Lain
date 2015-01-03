@@ -1,3 +1,4 @@
+package require http
 
 proc srvcheck {host} {
   set string "_minecraft._tcp."
@@ -129,7 +130,7 @@ proc gcalc {query} {
     return "Error: Invalid Query";
   }
  
-  return "$proccessedquery = $result"
+  return "\00304Google says:\003 $proccessedquery = $result"
 }
 
 
@@ -137,5 +138,138 @@ proc basiccalc {nick chan text} {
   return [gcalc [http::formatQuery $text]]
 }
 
+proc wa_url-encode {string} {
+    variable map
+        variable alphanumeric a-zA-Z0-9
+        for {set i 0} {$i <= 256} {incr i} {
+            set c [format %c $i]
+            if {![string match \[$alphanumeric\] $c]} {
+                set map($c) %[format %.2x $i]
+            }
+        }
+        # These are handled specially
+    array set map { " " + \n %0d%0a }
+    regsub -all \[^$alphanumeric\] $string {$map(&)} string
+    # This quotes cases like $map([) or $map($) => $map(\[) ...
+    regsub -all {[][{})\\]\)} $string {\\&} string
+    return [subst -nocommand $string]
+}
+ 
+proc wa_Html_DecodeEntity {text} {
+        if {![regexp & $text]} {return $text}
+        regsub -all {([][$\\])} $text {\\\1} new
+        regsub -all {&#([0-9][0-9]?[0-9]?);?}  $new {\
+                [format %c [scan \1 %d tmp;set tmp]]} new
+        regsub -all {&([a-zA-Z]+)(;?)} $new \
+                {[wa_HtmlMapEntity \1 \\\2 ]} new
+        return [subst $new]
+}
+ 
+proc wa_HtmlMapEntity {text {semi {}}} {
+        global wa_htmlEntityMap
+        set result $text$semi
+        catch {set result $wa_htmlEntityMap($text)}
+        return $result
+}
+
+proc make_tinyurl {url} {
+if {[info exists url] && [string length $url]} {
+ if {[regexp {http://tinyurl\.com/\w+} $url]} {
+  set http [::http::geturl $url -timeout 4000]
+  upvar #0 $http state ; array set meta $state(meta)
+  ::http::cleanup $http ; return $meta(Location)
+ } else {
+  set http [::http::geturl "http://tinyurl.com/create.php" \
+    -query [::http::formatQuery "url" $url] -timeout 9000]
+  set data [split [::http::data $http] \n] ; ::http::cleanup $http
+  for {set index [llength $data]} {$index >= 0} {incr index -1} {
+   if {[regexp {href="http://tinyurl\.com/\w+"} [lindex $data $index] url]} {
+    return [string map { {href=} "" \" "" } $url]
+   }
+  }
+ }
+}
+error "failed to get tiny url."
+}
+
+proc wa_extract_title {xml_blob} {
+  global wolframalpha
+  #parser myparser
+  #set title [tax::parse myparser xml_blob]
+  regexp {<plaintext>(.*?)</plaintext>(.*?)<plaintext>(.*?)</plaintext>} $xml_blob all_text first_text trash_text second_text
+  if { [info exists second_text] } {
+      set title "$first_text = $second_text"
+  } else {
+      set title ""
+  }
+  return [split [wa_Html_DecodeEntity $title] "\n"]
+}
+
+global wolframalpha wa_htmlEntityMap
+set wolframalpha(timeout)            "4000"
+set wolframalpha(apikey) {}
+set wolframalpha(oembed_location)    "http://api.wolframalpha.com/v2/query?appid="
+set wolframalpha(no_results) "No timely results found.  See more:"
+
+
+array set wa_htmlEntityMap {
+        lt      <       gt      >       amp     &       apos    '
+        aring           \xe5            atilde          \xe3
+        copy            \xa9            ecirc           \xea            egrave          \xe8
+}
+
+proc wa {args} {
+global wolframalpha
+   set encoded [wa_url-encode [join $args]]
+   set waurl "[set myLoc $wolframalpha(oembed_location)][set myAPI $wolframalpha(apikey)]\&format=plaintext\&input=$encoded"
+   
+   set response [http::geturl "$waurl" -timeout $wolframalpha(timeout)]
+   set response [http::data $response]
+   set response [wa_extract_title $response]
+
+   putmainlog "$args - $encoded"
+
+   if { [string equal $response "" ]} {
+      lappend result $wolframalpha(no_results)
+   } else {
+      set result $response
+   }
+
+   lappend result [make_tinyurl "http://www.wolframalpha.com/input/?i=$encoded"]
+
+   return $result
+}
+
+proc pubwa {nick chan text} {
+  global wolframalpha
+  set prefix "\00304Wolfie says:\003 "
+  set response [wa $text]
+  set result [lrange $response 0 end-1]
+  set url [lindex $response end]
+
+  set output ""
+  set break 0
+  
+  foreach line $result {
+    set line "${prefix}${line}"
+    set prefix ""
+
+    if {[string length $line] > 400} {
+      set line "[string range $line 0 400]..."
+      set break 1
+    }
+
+    if {[llength $output] == 1} {
+      set break 1
+    }
+
+    lappend output $line
+
+    if {$break == 1} {
+      break
+    }
+  }
+  return "[join $output "\n"] - \00312$url"
+}
 
 return "Recreated service cluster"
