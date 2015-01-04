@@ -237,6 +237,10 @@ proc ischanban {banmask channel} {
   }
 }
 
+proc showuptime {n c t} {
+  return "System uptime: [exec uptime]\nLain uptime: [duration [expr [unixtime] - [bncuptime]]]"
+}
+
 proc isMinecraftUp {nick chan text} {
     if {[llength [split $text { }]] == 0} { putnotc $nick "Syntax: .isup <host>\[:port\]"; return }    
     set text [split [lindex [split $text { }] 0] {:}]
