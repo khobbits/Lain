@@ -1305,10 +1305,9 @@ proc sbnc:checkBans { } {
 				}
 			}
 
-			set i 0
-
 			foreach chan [channels] {
 				if {[info exists chanInfo(bans:$chan)]} {
+					set i 0
 					foreach ban $chanInfo(bans:$chan) {
 						set lifetime [lindex [split $ban #] 1]
 						if {[string index $lifetime end] == "*"} {
