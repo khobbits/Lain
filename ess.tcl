@@ -187,7 +187,7 @@ proc itemdbparse {n u h c t} {
 	#set data [http::data [http::geturl http://pastebin.com/raw.php?i=886jcrcM]];
   #set data [http::data [http::geturl http://pastebin.com/raw.php?i=Y3yw0RXG]];
  # set data [http::data [http::geturl http://pastebin.com/raw.php?i=k3CUCadR]];
-  set data [http::data [http::geturl https://raw.github.com/essentials/Essentials/2.x/Essentials/src/items.csv]];
+  set data [http::data [http::geturl https://raw.githubusercontent.com/essentials/Essentials/2.x/Essentials/src/items.csv]];
 	set errorc 0
 	set lineno 0
 	set lastid 0
@@ -195,6 +195,7 @@ proc itemdbparse {n u h c t} {
 		incr lineno
 		set line [split $line {,}];
 		if {[string match "#*" [join $line]]} { continue }
+		if {[string length [join $line]] == 0} { continue }
 		if {[llength $line] != 3} { putnotc $n "Syntax error: Each line needs 3 parameters: '$line' Line: $lineno " }
 		if {$line != [string tolower $line]} { putnotc $n "Syntax error: Casing error: '$line' Line: $lineno " }	
 		set item [lindex $line 0]
