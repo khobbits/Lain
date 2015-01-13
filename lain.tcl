@@ -9,8 +9,7 @@ proc ping {host} {
 
 proc pubping {n c t} {
   if {[string length $t] < 4} {
-    putnotc $n "Syntax: .ping <host>"
-    return
+    return "Pong!"
   }
   return [ping [lindex [split $t { }] 0]]
 }
