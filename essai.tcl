@@ -9,7 +9,9 @@ proc essai {nick host hand chan text} {
       return
     }
     
-	if {[regexp -nocase {(Could.not.pass.event)} $text]} {
+  if {[regexp -nocase {^[.+|]} $text]} {
+    return
+  } elseif {[regexp -nocase {(Could.not.pass.event)} $text]} {
 		essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 Could not pass event errors are generally caused by using out of date copies of plugins/bukkit.  It can also be caused by other broken plugins.  Check your server startup log for errors."
   } elseif {[regexp -nocase {(internal.error)} $text]} {
 		essaiout $nick $chan "\00304\[\00312Automsg\00304\]\003 If you have internal errors, please check your server log, if you can't understand it, pastebin the error so we can see."  
